@@ -133,6 +133,9 @@ int main() {
 
     std::cout << "Result: " << min << std::endl;
     file.close();
+    for (unsigned int i = 0; i < categoryMaps.size(); i++)
+        delete categoryMaps[i];
+
     return 0;
 }
 
