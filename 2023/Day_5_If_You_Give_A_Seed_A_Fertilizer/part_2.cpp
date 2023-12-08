@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <climits>
+#include <omp.h>
 
 
 #define fileName "input.txt"
@@ -82,7 +83,6 @@ int main() {
     std::getline(file, line);
     seeds = analyzeFirstLine(line);
 
-
     CategoryMap* cm;
     while (std::getline(file, line)) {
         if (!line.empty()) {
@@ -107,19 +107,29 @@ int main() {
         lines.clear();
     }
 
-    std::string category = "seed";
-    std::vector<long long> temp = seeds;
-    for (unsigned int i = 0; i < categoryMaps.size(); i++)
-        if (categoryMaps[i]->category1 == category) {
-            for (unsigned int k = 0; k < temp.size(); k++) {
-                temp[k] = categoryMaps[i]->getCorrespondingNumber(temp[k]);
-            }
-            category = categoryMaps[i]->category2;
-        }
+    long long temp = 0;
+    std::cout << "seeds size: " << seeds.size() << std::endl;
+    
+    int max_threads = omp_get_max_threads();
+    omp_set_num_threads(max_threads);
 
-    for (unsigned int i = 0; i < temp.size(); i++)
-        if (temp[i] < min)
-            min = temp[i];
+#pragma omp parallel for private(temp) shared(min)
+    for (int s = 0; s < seeds.size(); s+=2) {
+        for (long long i = seeds[s]; i < (seeds[s] + seeds[s+1]); i++) {
+            std::string category = "seed";
+            temp = i;
+
+            for (unsigned int j = 0; j < categoryMaps.size(); j++) {
+                if (categoryMaps[j]->category1 == category) {
+                    temp = categoryMaps[j]->getCorrespondingNumber(temp);
+                }
+                category = categoryMaps[j]->category2;
+            }
+            if (temp < min)
+                min = temp;
+        }
+        std::cout << s << " " << min << " " << temp << std::endl;
+    }
 
     std::cout << "Result: " << min << std::endl;
     file.close();
